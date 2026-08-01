@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "JarvisKu",
+    "slug": "jarvisku",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "scheme": "jarvisku",
+    "splash": {
+      "backgroundColor": "#0F172A",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.jarvisku",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "JarvisKu menggunakan mikrofon untuk perintah suara.",
+        "NSSpeechRecognitionUsageDescription": "JarvisKu menggunakan speech recognition untuk mengetik pesan suara."
+      }
+    },
+    "android": {
+      "package": "app.jarvisku",
+      "adaptiveIcon": {
+        "backgroundColor": "#0F172A"
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.USE_BIOMETRIC"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-splash-screen",
+      "expo-secure-store",
+      "expo-local-authentication"
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      }
+    }
+  }
+}

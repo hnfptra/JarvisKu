@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist/
+build/
+.expo/
+apps/mobile/.expo/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+
+# Misc
+.vercel/
+.netlify/

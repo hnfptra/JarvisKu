@@ -1,0 +1,13 @@
+[build]
+  command = "npm ci"
+  publish = "netlify/functions"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# Route all /api/* traffic into the single edge function (internal rewrite).
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api"
+  status = 200

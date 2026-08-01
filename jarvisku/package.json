@@ -1,0 +1,18 @@
+{
+  "name": "jarvisku",
+  "version": "0.1.0",
+  "private": true,
+  "description": "JarvisKu — AI personal assistant mobile app (monorepo)",
+  "scripts": {
+    "install:all": "npm --prefix apps/mobile install && npm --prefix backend/edge-functions install",
+    "dev:mobile": "npm --prefix apps/mobile run dev",
+    "dev:backend": "npm --prefix backend/edge-functions run dev",
+    "test": "npm --prefix backend/edge-functions test",
+    "lint": "npm --prefix apps/mobile run lint && npm --prefix backend/edge-functions run lint",
+    "typecheck": "npm --prefix apps/mobile run typecheck && npm --prefix backend/edge-functions run typecheck",
+    "seed": "npm --prefix backend/edge-functions run seed"
+  },
+  "devDependencies": {
+    "husky": "^9.1.4"
+  }
+}
