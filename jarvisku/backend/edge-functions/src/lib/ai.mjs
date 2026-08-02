@@ -4,26 +4,41 @@ function hasOpenAIKey() {
   return !!env.OPENAI_API_KEY && !env.OPENAI_API_KEY.startsWith('sk-...') && !env.OPENAI_API_KEY.includes('<');
 }
 
-/** OpenAI-compatible chat completion via fetch. No SDK, works on any edge runtime. */
+function hasOpenRouterKey() {
+  return !!env.OPENROUTER_API_KEY && env.OPENROUTER_API_KEY.startsWith('sk-or-');
+}
+
+/**
+ * Chat completion. Prefers OpenRouter when a sk-or- key is present (supports
+ * free models like nvidia/nemotron-3-super-120b-a12b:free); else OpenAI.
+ * Falls back to a local reply when no key is configured.
+ */
 export async function chatCompletion({ messages, temperature = 0.7 }) {
-  if (!hasOpenAIKey()) {
-    // Offline / unconfigured fallback keeps the app usable during dev.
-    return localReply(messages);
+  if (hasOpenRouterKey()) {
+    return chatWithProvider('https://openrouter.ai/api/v1/chat/completions', env.OPENROUTER_API_KEY, env.OPENROUTER_MODEL, messages, temperature, 'OpenRouter');
   }
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+  if (hasOpenAIKey()) {
+    return chatWithProvider('https://api.openai.com/v1/chat/completions', env.OPENAI_API_KEY, env.OPENAI_MODEL, messages, temperature, 'OpenAI');
+  }
+  // Offline / unconfigured fallback keeps the app usable during dev.
+  return localReply(messages);
+}
+
+async function chatWithProvider(endpoint, key, model, messages, temperature, name) {
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      authorization: `Bearer ${env.OPENAI_API_KEY}`,
+      authorization: `Bearer ${key}`,
     },
     body: JSON.stringify({
-      model: env.OPENAI_MODEL,
+      model,
       messages,
       temperature,
     }),
   });
   if (!res.ok) {
-    const e = new Error(`OpenAI error ${res.status}: ${await res.text()}`);
+    const e = new Error(`${name} error ${res.status}: ${await res.text()}`);
     e.status = 502;
     throw e;
   }

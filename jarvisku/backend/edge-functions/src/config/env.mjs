@@ -19,4 +19,8 @@ export const env = {
   REFRESH_EXPIRES_IN: process.env.REFRESH_EXPIRES_IN || '30d',
   OPENAI_API_KEY: required('OPENAI_API_KEY'),
   OPENAI_MODEL: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+  // OpenRouter: dipakai untuk chat bila OPENAI_API_KEY kosong/dummy.
+  // Key berformat sk-or-v1-...  Model bebas pilih (mis. nvidia/nemotron-3-super-120b-a12b:free).
+  OPENROUTER_API_KEY: required('OPENROUTER_API_KEY'),
+  OPENROUTER_MODEL: process.env.OPENROUTER_MODEL || 'nvidia/nemotron-3-super-120b-a12b:free',
 };
