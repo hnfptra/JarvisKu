@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { View, TextInput, Pressable, KeyboardAvoidingView, Platform, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming, Easing } from 'react-native-reanimated';
 import Screen from '../../components/ui/Screen';
 import Text from '../../components/ui/Text';
 import Icon from '../../components/ui/Icon';
@@ -8,6 +9,48 @@ import { useVoiceAssistant } from '../../hooks/useVoiceAssistant';
 import { assistantApi } from '../../lib/api/endpoints';
 import { colors } from '../../lib/theme';
 import { useQueryClient } from '@tanstack/react-query';
+
+/** Expanding ring behind the mic while listening. 180ms pulse, soft easing. */
+function PulseRing() {
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(0.5);
+
+  useEffect(() => {
+    scale.value = withRepeat(
+      withTiming(1.6, { duration: 600, easing: Easing.out(Easing.cubic) }),
+      -1,
+      true
+    );
+    opacity.value = withRepeat(
+      withTiming(0, { duration: 600, easing: Easing.out(Easing.cubic) }),
+      -1,
+      true
+    );
+  }, [scale, opacity]);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        {
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          backgroundColor: colors.danger,
+        },
+        style,
+      ]}
+    />
+  );
+}
 
 type Msg = { role: 'user' | 'assistant'; content: string; createdAt: string };
 
@@ -122,15 +165,18 @@ export default function Assistant() {
           </View>
 
           {/* Voice button */}
-          <Pressable
-            onPressIn={onVoice.start}
-            onPressOut={onVoice.stop}
-            className={`w-14 h-14 rounded-full items-center justify-center ${
-              onVoice.phase === 'listening' ? 'bg-danger' : 'bg-primary'
-            }`}
-          >
-            <Icon name="mic" size={24} color="#fff" />
-          </Pressable>
+          <View>
+            {onVoice.phase === 'listening' ? <PulseRing /> : null}
+            <Pressable
+              onPressIn={onVoice.start}
+              onPressOut={onVoice.stop}
+              className={`w-14 h-14 rounded-full items-center justify-center ${
+                onVoice.phase === 'listening' ? 'bg-danger' : 'bg-primary'
+              }`}
+            >
+              <Icon name="mic" size={24} color="#fff" />
+            </Pressable>
+          </View>
         </View>
       </Screen>
     </KeyboardAvoidingView>

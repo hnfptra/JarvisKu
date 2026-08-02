@@ -1,22 +1,20 @@
-import { View, Pressable, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Alert } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Screen from '../components/ui/Screen';
-import Card from '../components/ui/Card';
-import Text from '../components/ui/Text';
-import Button from '../components/ui/Button';
-import Icon from '../components/ui/Icon';
-import EmptyState from '../components/ui/EmptyState';
-import { SkeletonList } from '../components/ui/Skeleton';
-import { premiumApi } from '../lib/api/endpoints';
-import { colors } from '../lib/theme';
+import Screen from '../../components/ui/Screen';
+import Card from '../../components/ui/Card';
+import Text from '../../components/ui/Text';
+import Button from '../../components/ui/Button';
+import Icon from '../../components/ui/Icon';
+import EmptyState from '../../components/ui/EmptyState';
+import Badge from '../../components/ui/Badge';
+import ErrorState from '../../components/ui/ErrorState';
+import { SkeletonList } from '../../components/ui/Skeleton';
+import { premiumApi } from '../../lib/api/endpoints';
+import { colors } from '../../lib/theme';
 
 export default function Premium() {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
   const qc = useQueryClient();
-  const { data: plansData, isLoading } = useQuery({ queryKey: ['plans'], queryFn: () => premiumApi.plans() });
+  const { data: plansData, isLoading, isError, refetch } = useQuery({ queryKey: ['plans'], queryFn: () => premiumApi.plans() });
   const { data: subData } = useQuery({ queryKey: ['subscription'], queryFn: () => premiumApi.subscription() });
 
   const subscribe = useMutation({
@@ -32,16 +30,16 @@ export default function Premium() {
   const current = subData?.subscription?.plan ?? 'free';
 
   return (
-    <Screen style={{ paddingTop: insets.top + 8 }}>
-      <View className="flex-row items-center mb-5">
-        <Pressable className="mr-3 p-1" onPress={() => router.back()}>
-          <Icon name="chevron" size={22} color={colors.text} />
-        </Pressable>
+    <Screen>
+      <View className="flex-row items-center justify-between mb-5">
         <Text variant="subtitle">JarvisKu Pro</Text>
+        <Text variant="caption" color="secondary">Upgrade asisten</Text>
       </View>
 
       {isLoading ? (
         <SkeletonList rows={3} height={120} />
+      ) : isError ? (
+        <ErrorState onRetry={() => refetch()} />
       ) : plans.length === 0 ? (
         <EmptyState icon="👑" title="Paket belum tersedia" />
       ) : (
@@ -59,12 +57,9 @@ export default function Premium() {
                   <View className="flex-row items-center gap-2">
                     {pro ? <Icon name="crown" size={18} color={colors.warning} /> : null}
                     <Text variant="subtitle">{p.name}</Text>
+                    {pro && !active ? <Badge label="Populer" tone="active" /> : null}
                   </View>
-                  {active ? (
-                    <View className="bg-success/15 rounded-full px-3 py-1">
-                      <Text color="success" variant="caption">Aktif</Text>
-                    </View>
-                  ) : null}
+                  {active ? <Badge label="Aktif" tone="active" /> : null}
                 </View>
                 <View className="flex-row items-end mb-3">
                   <Text variant="title">

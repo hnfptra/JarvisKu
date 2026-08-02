@@ -6,6 +6,7 @@ import Card from '../../components/ui/Card';
 import Text from '../../components/ui/Text';
 import Button from '../../components/ui/Button';
 import Icon from '../../components/ui/Icon';
+import ErrorState from '../../components/ui/ErrorState';
 import { authApi } from '../../lib/api/endpoints';
 import { useAuth } from '../../store/auth';
 import { colors } from '../../lib/theme';
@@ -14,7 +15,7 @@ export default function Account() {
   const router = useRouter();
   const qc = useQueryClient();
   const { user, logout } = useAuth();
-  const { data } = useQuery({ queryKey: ['profile'], queryFn: authApi.getProfile });
+  const { data, isError, refetch } = useQuery({ queryKey: ['profile'], queryFn: () => authApi.getProfile() });
 
   const prefs = data?.preferences ?? {};
 
@@ -36,6 +37,8 @@ export default function Account() {
           <Text color="accent" variant="caption">Paket Gratis</Text>
         </View>
       </Card>
+
+      {isError ? <ErrorState onRetry={() => refetch()} /> : null}
 
       <Text variant="subtitle" className="mb-3">Preferensi</Text>
       <Card className="gap-4">

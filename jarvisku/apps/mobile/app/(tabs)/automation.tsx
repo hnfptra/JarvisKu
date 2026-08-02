@@ -8,6 +8,7 @@ import Text from '../../components/ui/Text';
 import Button from '../../components/ui/Button';
 import Icon from '../../components/ui/Icon';
 import EmptyState from '../../components/ui/EmptyState';
+import ErrorState from '../../components/ui/ErrorState';
 import { SkeletonList } from '../../components/ui/Skeleton';
 import { autoreplyApi } from '../../lib/api/endpoints';
 import type { AutoReplyTemplate } from '../../lib/types';
@@ -16,7 +17,7 @@ import { colors } from '../../lib/theme';
 export default function Automation() {
   const router = useRouter();
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ['autoreply'], queryFn: () => autoreplyApi.config() });
+  const { data, isLoading, isError, refetch } = useQuery({ queryKey: ['autoreply'], queryFn: () => autoreplyApi.config() });
 
   const enableMutation = useMutation({
     mutationFn: (enabled: boolean) =>
@@ -36,6 +37,8 @@ export default function Automation() {
 
       {isLoading ? (
         <SkeletonList rows={3} height={64} />
+      ) : isError ? (
+        <ErrorState onRetry={() => refetch()} />
       ) : (
         <View className="gap-4">
           {/* AFK toggle */}

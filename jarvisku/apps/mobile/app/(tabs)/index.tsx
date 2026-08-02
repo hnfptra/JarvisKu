@@ -5,6 +5,9 @@ import Screen from '../../components/ui/Screen';
 import Card from '../../components/ui/Card';
 import Text from '../../components/ui/Text';
 import Icon from '../../components/ui/Icon';
+import Avatar from '../../components/ui/Avatar';
+import Badge from '../../components/ui/Badge';
+import ErrorState from '../../components/ui/ErrorState';
 import { SkeletonList } from '../../components/ui/Skeleton';
 import { dashboardApi } from '../../lib/api/endpoints';
 import { useAuth } from '../../store/auth';
@@ -14,12 +17,12 @@ const QUICK_ACTIONS = [
   { href: '/assistant', icon: 'mic', label: 'Bicara', tint: colors.primary },
   { href: '/automation', icon: 'zap', label: 'Otomatis', tint: colors.accent },
   { href: '/social', icon: 'reply', label: 'Pesan', tint: colors.success },
-  { href: '/account', icon: 'user', label: 'Akun', tint: colors.warning },
+  { href: '/premium', icon: 'crown', label: 'Pro', tint: colors.warning },
 ] as const;
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { data, isLoading, refetch, isRefetching } = useQuery({
+  const { data, isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ['dashboard'],
     queryFn: () => dashboardApi.get(),
   });
@@ -28,14 +31,19 @@ export default function Dashboard() {
     <Screen scroll refreshing={isRefetching} onRefresh={refetch}>
       {/* Header */}
       <View className="flex-row items-center justify-between mb-6 mt-2">
-        <View>
-          <Text variant="caption" color="secondary">Halo,</Text>
-          <Text variant="title">{user?.name ?? 'JarvisKu'}</Text>
+        <View className="flex-row items-center">
+          <Avatar name={user?.name} size={44} />
+          <View className="ml-3">
+            <Text variant="caption" color="secondary">Halo,</Text>
+            <Text variant="title">{user?.name ?? 'JarvisKu'}</Text>
+          </View>
         </View>
-        <View className="flex-row items-center gap-2 bg-card rounded-2xl px-3 py-2 border border-border">
-          <Icon name="crown" size={16} color={colors.warning} />
-          <Text variant="caption">{data?.subscription.plan === 'pro' ? 'Pro' : 'Gratis'}</Text>
-        </View>
+        <Link href="/premium" asChild>
+          <Pressable className="flex-row items-center gap-2 bg-card rounded-2xl px-3 py-2 border border-border">
+            <Icon name="crown" size={16} color={colors.warning} />
+            <Text variant="caption">{data?.subscription.plan === 'pro' ? 'Pro' : 'Gratis'}</Text>
+          </Pressable>
+        </Link>
       </View>
 
       {/* Quick actions */}
@@ -52,6 +60,8 @@ export default function Dashboard() {
 
       {isLoading ? (
         <SkeletonList rows={4} height={72} />
+      ) : isError ? (
+        <ErrorState onRetry={() => refetch()} />
       ) : (
         <View className="gap-4">
           {/* Voice assistant CTA */}
@@ -68,17 +78,24 @@ export default function Dashboard() {
           </Link>
 
           {/* Automation status */}
-          <Card>
-            <View className="flex-row items-center justify-between mb-2">
-              <Text variant="subtitle">Balas Otomatis</Text>
-              <View className={`h-2.5 w-2.5 rounded-full ${data?.automation.enabled ? 'bg-success' : 'bg-border'}`} />
-            </View>
-            <Text variant="caption" color="secondary">
-              {data?.automation.enabled
-                ? `Aktif · ${data.automation.templateCount} template`
-                : 'Nonaktif — aktifkan di tab Otomatis'}
-            </Text>
-          </Card>
+          <Link href="/automation" asChild>
+            <Pressable>
+              <Card>
+                <View className="flex-row items-center justify-between mb-2">
+                  <Text variant="subtitle">Balas Otomatis</Text>
+                  <Badge
+                    label={data?.automation.enabled ? 'Aktif' : 'Nonaktif'}
+                    tone={data?.automation.enabled ? 'active' : 'neutral'}
+                  />
+                </View>
+                <Text variant="caption" color="secondary">
+                  {data?.automation.enabled
+                    ? `${data.automation.templateCount} template siap`
+                    : 'Aktifkan di tab Otomatis'}
+                </Text>
+              </Card>
+            </Pressable>
+          </Link>
 
           {/* Connected social */}
           <Card>
@@ -102,9 +119,36 @@ export default function Dashboard() {
             </View>
           </Card>
 
+          {/* Subscription status */}
+          <Link href="/premium" asChild>
+            <Pressable>
+              <Card className={data?.subscription.plan === 'pro' ? 'border-accent/50' : ''}>
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center">
+                    <Icon name="crown" size={20} color={colors.warning} />
+                    <View className="ml-3">
+                      <Text variant="body">Paket {data?.subscription.plan === 'pro' ? 'Pro' : 'Gratis'}</Text>
+                      <Text variant="caption" color="secondary">
+                        {data?.subscription.plan === 'pro'
+                          ? `Berlaku s/d ${data.subscription.renewsAt ? dateOnly(data.subscription.renewsAt) : '-'}`
+                          : 'Upgrade untuk akses penuh'}
+                      </Text>
+                    </View>
+                  </View>
+                  <Badge label={data?.subscription.plan === 'pro' ? 'Aktif' : 'Coba'} tone={data?.subscription.plan === 'pro' ? 'active' : 'pending'} />
+                </View>
+              </Card>
+            </Pressable>
+          </Link>
+
           {/* Recent activity */}
           <Card>
-            <Text variant="subtitle" className="mb-3">Aktivitas Terbaru</Text>
+            <View className="flex-row items-center justify-between mb-3">
+              <Text variant="subtitle">Aktivitas Terbaru</Text>
+              <Link href="/history" asChild>
+                <Pressable><Text color="accent" variant="caption">Lihat semua</Text></Pressable>
+              </Link>
+            </View>
             {!data?.recentActivity.length ? (
               <Text variant="caption" color="secondary">Belum ada aktivitas. Mulai chat dengan asisten!</Text>
             ) : (
@@ -121,6 +165,10 @@ export default function Dashboard() {
       )}
     </Screen>
   );
+}
+
+function dateOnly(iso: string) {
+  return new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
 }
 
 function relativeTime(iso: string) {

@@ -1,29 +1,30 @@
 import { useState } from 'react';
-import { View, TextInput, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
+import { useForm } from 'react-hook-form';
 import { Link, useRouter } from 'expo-router';
 import Screen from '../components/ui/Screen';
 import Text from '../components/ui/Text';
 import Button from '../components/ui/Button';
+import { FormInput } from '../components/ui/Input';
 import { useAuth } from '../store/auth';
+
+type FormValues = { name: string; email: string; password: string };
 
 export default function Register() {
   const { register } = useAuth();
   const router = useRouter();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  async function submit() {
-    if (password.length < 8) {
-      setError('Password minimal 8 karakter.');
-      return;
-    }
+  const { control, handleSubmit, formState } = useForm<FormValues>({
+    defaultValues: { name: '', email: '', password: '' },
+  });
+
+  async function submit(v: FormValues) {
     setLoading(true);
     setError('');
     try {
-      await register(name.trim(), email.trim(), password);
+      await register(v.name.trim(), v.email.trim(), v.password);
       router.replace('/(tabs)');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Daftar gagal');
@@ -38,36 +39,41 @@ export default function Register() {
         <Text variant="title" className="mb-1">Buat akun</Text>
         <Text variant="caption" className="mb-6">Satu langkah lagi, gratis.</Text>
 
-        <View className="gap-3">
-          <TextInput
-            value={name}
-            onChangeText={setName}
-            placeholder="Nama"
-            placeholderTextColor="#64748B"
-            className="h-12 bg-card border border-border rounded-2xl px-4 text-text"
+        <View className="gap-4">
+          <FormInput
+            control={control}
+            name="name"
+            label="Nama"
+            placeholder="Nama kamu"
+            rules={{ required: 'Nama wajib diisi', minLength: { value: 2, message: 'Minimal 2 karakter' } }}
           />
-          <TextInput
-            value={email}
-            onChangeText={setEmail}
-            placeholder="Email"
-            placeholderTextColor="#64748B"
+          <FormInput
+            control={control}
+            name="email"
+            label="Email"
+            placeholder="nama@email.com"
             keyboardType="email-address"
             autoCapitalize="none"
-            className="h-12 bg-card border border-border rounded-2xl px-4 text-text"
+            rules={{ required: 'Email wajib diisi', pattern: { value: /^\S+@\S+\.\S+$/, message: 'Email tidak valid' } }}
           />
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Password (min. 8)"
-            placeholderTextColor="#64748B"
+          <FormInput
+            control={control}
+            name="password"
+            label="Password"
+            placeholder="Minimal 8 karakter"
             secureTextEntry
-            className="h-12 bg-card border border-border rounded-2xl px-4 text-text"
+            rules={{ required: 'Password wajib diisi', minLength: { value: 8, message: 'Minimal 8 karakter' } }}
           />
           {error ? <Text color="danger" variant="caption">{error}</Text> : null}
         </View>
 
         <View className="mt-6 gap-3">
-          <Button title="Daftar" onPress={submit} loading={loading} />
+          <Button
+            title="Daftar"
+            onPress={handleSubmit(submit)}
+            loading={loading}
+            disabled={!formState.isValid || loading}
+          />
           <Link href="/login" asChild>
             <TouchableOpacity className="items-center py-2">
               <Text variant="body" color="secondary">

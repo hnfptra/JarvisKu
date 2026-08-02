@@ -1,15 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
 import { View, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
-import Screen from '../../components/ui/Screen';
-import Card from '../../components/ui/Card';
-import Text from '../../components/ui/Text';
-import Icon, { PlatformIcon } from '../../components/ui/Icon';
-import EmptyState from '../../components/ui/EmptyState';
-import { SkeletonList } from '../../components/ui/Skeleton';
-import { socialApi } from '../../lib/api/endpoints';
-import { colors } from '../../lib/theme';
-import type { SocialPlatform } from '../../lib/types';
+import Screen from '../components/ui/Screen';
+import Card from '../components/ui/Card';
+import Text from '../components/ui/Text';
+import Icon, { PlatformIcon } from '../components/ui/Icon';
+import EmptyState from '../components/ui/EmptyState';
+import ErrorState from '../components/ui/ErrorState';
+import { SkeletonList } from '../components/ui/Skeleton';
+import { socialApi } from '../lib/api/endpoints';
+import { colors } from '../lib/theme';
+import type { SocialPlatform } from '../lib/types';
 
 const PLATFORM_LABELS: Record<SocialPlatform, string> = {
   instagram: 'Instagram',
@@ -21,7 +22,7 @@ const PLATFORM_LABELS: Record<SocialPlatform, string> = {
 
 export default function Social() {
   const router = useRouter();
-  const { data, isLoading } = useQuery({ queryKey: ['social'], queryFn: () => socialApi.accounts() });
+  const { data, isLoading, isError, refetch } = useQuery({ queryKey: ['social'], queryFn: () => socialApi.accounts() });
   const messagesQuery = useQuery({ queryKey: ['inbox'], queryFn: () => socialApi.messages() });
 
   const accounts = data?.accounts ?? [];
@@ -37,6 +38,8 @@ export default function Social() {
 
       {isLoading ? (
         <SkeletonList rows={3} height={64} />
+      ) : isError ? (
+        <ErrorState onRetry={() => refetch()} />
       ) : accounts.length === 0 ? (
         <EmptyState icon="🔗" title="Belum ada akun terhubung" subtitle="Hubungkan WhatsApp, Instagram, dan lainnya." />
       ) : (

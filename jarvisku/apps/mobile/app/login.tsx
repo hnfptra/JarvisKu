@@ -1,29 +1,39 @@
 import { useState } from 'react';
-import { View, TextInput, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
+import { useForm } from 'react-hook-form';
 import { Link, useRouter } from 'expo-router';
+import * as LocalAuthentication from 'expo-local-authentication';
 import Screen from '../components/ui/Screen';
 import Text from '../components/ui/Text';
 import Button from '../components/ui/Button';
 import Icon from '../components/ui/Icon';
+import { FormInput } from '../components/ui/Input';
 import { useAuth } from '../store/auth';
+import { colors } from '../lib/theme';
+
+type FormValues = { email: string; password: string };
 
 export default function Login() {
   const { login } = useAuth();
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [bioLoading, setBioLoading] = useState(false);
+  const [bioAvailable, setBioAvailable] = useState(false);
 
-  async function submit() {
-    if (!email || !password) {
-      setError('Isi email dan password dulu ya.');
-      return;
-    }
+  const { control, handleSubmit, formState } = useForm<FormValues>({
+    defaultValues: { email: '', password: '' },
+  });
+
+  useState(() => {
+    LocalAuthentication.hasHardwareAsync().then((ok) => setBioAvailable(ok));
+  });
+
+  async function submit(v: FormValues) {
     setLoading(true);
     setError('');
     try {
-      await login(email.trim(), password);
+      await login(v.email.trim(), v.password);
       router.replace('/(tabs)');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Login gagal');
@@ -31,6 +41,23 @@ export default function Login() {
       setLoading(false);
     }
   }
+
+  async function biometricLogin() {
+    setBioLoading(true);
+    try {
+      const ok = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Buka JarvisKu',
+      });
+      if (ok.success) {
+        // MVP: biometric hanya verifikasi device; token di SecureStore tetap berlaku.
+        router.replace('/(tabs)');
+      }
+    } finally {
+      setBioLoading(false);
+    }
+  }
+
+  const invalid = !formState.isValid;
 
   return (
     <Screen>
@@ -43,29 +70,43 @@ export default function Login() {
           <Text variant="caption" className="mt-1">Login untuk lanjut</Text>
         </View>
 
-        <View className="gap-3">
-          <TextInput
-            value={email}
-            onChangeText={setEmail}
-            placeholder="Email"
-            placeholderTextColor="#64748B"
+        <View className="gap-4">
+          <FormInput
+            control={control}
+            name="email"
+            label="Email"
+            placeholder="nama@email.com"
             keyboardType="email-address"
             autoCapitalize="none"
-            className="h-12 bg-card border border-border rounded-2xl px-4 text-text"
+            rules={{ required: 'Email wajib diisi', pattern: { value: /^\S+@\S+\.\S+$/, message: 'Email tidak valid' } }}
           />
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
+          <FormInput
+            control={control}
+            name="password"
+            label="Password"
             placeholder="Password"
-            placeholderTextColor="#64748B"
             secureTextEntry
-            className="h-12 bg-card border border-border rounded-2xl px-4 text-text"
+            rules={{ required: 'Password wajib diisi' }}
           />
           {error ? <Text color="danger" variant="caption">{error}</Text> : null}
         </View>
 
         <View className="mt-6 gap-3">
-          <Button title="Login" onPress={submit} loading={loading} />
+          <Button
+            title="Login"
+            onPress={handleSubmit(submit)}
+            loading={loading}
+            disabled={invalid || loading}
+          />
+          {bioAvailable ? (
+            <Button
+              title="Masuk dengan Biometrik"
+              variant="ghost"
+              icon={<Icon name="fingerprint" size={18} color={colors.textSecondary} />}
+              onPress={biometricLogin}
+              loading={bioLoading}
+            />
+          ) : null}
           <Link href="/register" asChild>
             <TouchableOpacity className="items-center py-2">
               <Text variant="body" color="secondary">

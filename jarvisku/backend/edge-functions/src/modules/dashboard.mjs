@@ -10,7 +10,7 @@ import { deriveSubscription } from './premium.mjs';
 export const dashboardRoutes = [
   {
     method: 'GET',
-    path: '/',
+    path: '',
     run: async (ctx) => {
       const db = await getDb();
       const userId = new ObjectId(ctx.userId);

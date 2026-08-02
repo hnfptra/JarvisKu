@@ -47,18 +47,23 @@ export const useAuth = create<AuthState>((set, get) => ({
   },
 
   hydrate: async () => {
-    const onboarded = (await loadJSON<boolean>(ONBOARD_KEY)) ?? false;
-    // Token lives in SecureStore; if present, refetch profile to validate.
-    const token = await getAccessToken();
-    set({ onboarded, booting: false });
-    if (token && !get().user) {
-      try {
-        const { user } = await authApi.getProfile();
-        set({ user, token });
-      } catch {
-        await setTokens(null, null);
-        set({ user: null, token: null });
+    try {
+      const onboarded = (await loadJSON<boolean>(ONBOARD_KEY)) ?? false;
+      // Token lives in SecureStore; if present, refetch profile to validate.
+      const token = await getAccessToken();
+      set({ onboarded, booting: false });
+      if (token && !get().user) {
+        try {
+          const { user } = await authApi.getProfile();
+          set({ user, token });
+        } catch {
+          await setTokens(null, null);
+          set({ user: null, token: null });
+        }
       }
+    } catch {
+      // Never block the UI: if storage/token access fails, fall through to onboarding.
+      set({ onboarded: false, booting: false });
     }
   },
 

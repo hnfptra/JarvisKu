@@ -6,6 +6,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from '../lib/theme';
 import { QueryProvider } from '../lib/query';
 import { useAuth } from '../store/auth';
+import ToastHost from '../components/ui/Toast';
+import Splash from '../components/ui/Splash';
 import '../global.css';
 
 export default function RootLayout() {
@@ -15,23 +17,32 @@ export default function RootLayout() {
     hydrate();
   }, [hydrate]);
 
-  if (booting) return null; // splash shows while hydrating
-
-  if (!onboarded) return <Redirect href="/onboarding" />;
-  if (!user) return <Redirect href="/login" />;
-
+  // Navigator (Stack) must always mount on first render — returning null first
+  // triggers "navigate before mounting Root Layout" in Expo Router.
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#0F172A' }}>
       <SafeAreaProvider>
         <ThemeProvider>
           <QueryProvider>
             <StatusBar style="light" />
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: '#0F172A' },
-              }}
-            />
+            {booting ? (
+              <Splash />
+            ) : (
+              <>
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    contentStyle: { backgroundColor: '#0F172A' },
+                  }}
+                />
+                {!onboarded ? (
+                  <Redirect href="/onboarding" />
+                ) : !user ? (
+                  <Redirect href="/login" />
+                ) : null}
+              </>
+            )}
+            <ToastHost />
           </QueryProvider>
         </ThemeProvider>
       </SafeAreaProvider>
